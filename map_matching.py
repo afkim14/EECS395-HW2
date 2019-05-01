@@ -39,12 +39,10 @@ def create_data(probe_data_file, link_data_file):
     link_data = []
     with open(probe_data_file) as probe_csvfile:
         reader = csv.reader(probe_csvfile)
-        next(reader)
         for row in reader:
             probe_data.append(ProbeDataPoint(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
     with open(link_data_file) as link_csvfile:
         reader = csv.reader(link_csvfile)
-        next(reader)
         for row in reader:
             link_data.append(LinkData(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16]))
     print(len(probe_data), len(link_data))
