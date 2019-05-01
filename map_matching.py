@@ -48,12 +48,14 @@ class LinkDataPoint:
         return "Latitude: " + str(self.lat) + ", Longitude: " + str(self.long)
 
 def create_data(probe_data_file, link_data_file):
-    probe_data = []
+    probe_data = {}
     link_data = []
     with open(probe_data_file) as probe_csvfile:
         reader = csv.reader(probe_csvfile)
         for row in reader:
-            probe_data.append(ProbeDataPoint(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
+            if (str(row[0]) not in probe_data):
+                probe_data[str(row[0])] = []
+            probe_data[str(row[0])].append(ProbeDataPoint(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
     with open(link_data_file) as link_csvfile:
         reader = csv.reader(link_csvfile)
         for row in reader:
