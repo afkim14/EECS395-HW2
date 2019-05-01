@@ -30,9 +30,22 @@ class LinkData:
         self.multiDigitized = multiDigitized
         self.urban = urban
         self.timeZone = timeZone
-        self.shapeInfo = shapeInfo
+        self.shapeInfo = create_link_data_points(shapeInfo)
         self.curvatureInfo = curvatureInfo
         self.slopeInfo = slopeInfo
+    def __str__(self):
+        shapeInfo = "["
+        for point in self.shapeInfo[:-1]:
+            shapeInfo += str(point) + "\n"
+        shapeInfo += "\t\t\t" + str(self.shapeInfo[-1]) + "]"
+        return "Link PVID: " + str(self.linkPVID) + "\n" + "\tLength: " + str(self.length) + "\n" + "\tShapeInfo: " + shapeInfo
+
+class LinkDataPoint:
+    def __init__(self, lat, long):
+        self.lat = lat
+        self.long = long
+    def __str__(self):
+        return "Latitude: " + str(self.lat) + ", Longitude: " + str(self.long)
 
 def create_data(probe_data_file, link_data_file):
     probe_data = []
@@ -45,7 +58,6 @@ def create_data(probe_data_file, link_data_file):
         reader = csv.reader(link_csvfile)
         for row in reader:
             link_data.append(LinkData(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16]))
-    print(len(probe_data), len(link_data))
     return probe_data, link_data
 
 ### SAVING AND LOADING PROBE AND LINK DATA (NOTE: NOT THAT MUCH FASTER THAN JUST CREATING THE DATA SETS AGAIN)###
@@ -60,7 +72,13 @@ def load_data():
     link_filehandler = open('./saved_link_data.txt', 'rb')
     return pickle.load(probe_filehandler), pickle.load(link_filehandler)
 
-
+def create_link_data_points(shapeInfo):
+    parsedPoints = []
+    points = shapeInfo.split("|")
+    for point in points:
+        coordinates = point.split("/")
+        parsedPoints.append(LinkDataPoint(coordinates[0], coordinates[1]))
+    return parsedPoints
 
 if __name__ == '__main__':
     # if (len(sys.argv) < 3):
