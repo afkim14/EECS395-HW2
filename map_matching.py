@@ -1,35 +1,32 @@
 import csv
 import pickle
-
-
 import pandas as pd
 import matplotlib.pyplot as plt
 
-dir='/Users/anastasiamontgomery/Documents/EECS395/probe_data_map_matching/'
-f1='Partition6467LinkData.csv'
-f2='Partition6467ProbePoints.csv'
-
-linkdata=pd.read_csv(dir+f1)
-probedata=pd.read_csv(dir+f2)
-
+# dir='/Users/anastasiamontgomery/Documents/EECS395/probe_data_map_matching/'
+# f1='Partition6467LinkData.csv'
+# f2='Partition6467ProbePoints.csv'
+#
+# linkdata=pd.read_csv(dir+f1)
+# probedata=pd.read_csv(dir+f2)
 
 # Read in link data and sort by latitude to make search function easier
-def reformat(dir,f1,f2):
-   linkdata=pd.read_csv(dir+f1)
-   probedata=pd.read_csv(dir+f2)
-   startpoint=[linkdata['shapeInfo'][x].split('|')[0] for x in range(len(linkdata))]
-   startpointLat=[startpoint[x].split('/')[0] for x in range(len(startpoint))]
-   startpointLon=[startpoint[x].split('/')[1] for x in range(len(startpoint))]
-   startpointAlt=[startpoint[x].split('/')[2] for x in range(len(startpoint))]
-   linkdata['startpointLat']=startpointLat; linkdata['startpointLon']= startpointLon; linkdata['startpointAlt']= startpointAlt
-   endpoint=[linkdata['shapeInfo'][x].split('|')[0] for x in range(len(linkdata))]
-   endpointLat=[endpoint[x].split('/')[0] for x in range(len(endpoint))]
-   endpointLon=[endpoint[x].split('/')[1] for x in range(len(endpoint))]
-   endpointAlt=[endpoint[x].split('/')[2] for x in range(len(endpoint))]
-   linkdata['endpointLat']= endpointLat; linkdata['endpointLon']= endpointLon; linkdata['endpointAlt']= endpointAlt
-   linkdataSorted=linkdata.sort_values('startpointLat').reset_index()
-   probedataSorted= probedata.sort_values('latitude').reset_index()
-   return linkdataSorted, probedataSorted
+# def reformat(dir,f1,f2):
+#    linkdata=pd.read_csv(dir+f1)
+#    probedata=pd.read_csv(dir+f2)
+#    startpoint=[linkdata['shapeInfo'][x].split('|')[0] for x in range(len(linkdata))]
+#    startpointLat=[startpoint[x].split('/')[0] for x in range(len(startpoint))]
+#    startpointLon=[startpoint[x].split('/')[1] for x in range(len(startpoint))]
+#    startpointAlt=[startpoint[x].split('/')[2] for x in range(len(startpoint))]
+#    linkdata['startpointLat']=startpointLat; linkdata['startpointLon']= startpointLon; linkdata['startpointAlt']= startpointAlt
+#    endpoint=[linkdata['shapeInfo'][x].split('|')[0] for x in range(len(linkdata))]
+#    endpointLat=[endpoint[x].split('/')[0] for x in range(len(endpoint))]
+#    endpointLon=[endpoint[x].split('/')[1] for x in range(len(endpoint))]
+#    endpointAlt=[endpoint[x].split('/')[2] for x in range(len(endpoint))]
+#    linkdata['endpointLat']= endpointLat; linkdata['endpointLon']= endpointLon; linkdata['endpointAlt']= endpointAlt
+#    linkdataSorted=linkdata.sort_values('startpointLat').reset_index()
+#    probedataSorted= probedata.sort_values('latitude').reset_index()
+#    return linkdataSorted, probedataSorted
 
 class ProbeDataPoint:
     def __init__(self, sampleID, dateTime, sourceCode, lat, long, altitude, speed, heading):
@@ -90,6 +87,7 @@ def create_data(probe_data_file, link_data_file):
         reader = csv.reader(link_csvfile)
         for row in reader:
             link_data.append(LinkData(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16]))
+    link_data.sort(key=lambda x: x.shapeInfo[0].lat, reverse=True)
     return probe_data, link_data
 
 ### SAVING AND LOADING PROBE AND LINK DATA (NOTE: NOT THAT MUCH FASTER THAN JUST CREATING THE DATA SETS AGAIN)###
