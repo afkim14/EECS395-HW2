@@ -2,6 +2,8 @@ import csv
 import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
+import math
+import sys
 
 # dir='/Users/anastasiamontgomery/Documents/EECS395/probe_data_map_matching/'
 # f1='Partition6467LinkData.csv'
@@ -38,6 +40,12 @@ class ProbeDataPoint:
         self.altitude = altitude
         self.speed = speed
         self.heading = heading
+
+        ### AFTER MATCHING WITH LINK
+        self.linkPVID = ""
+        self.direction = ""
+        self.distFromRef = ""
+        self.distFromLink = ""
     def __str__(self):
         return "Probe ID: " + str(self.sampleID) + "\n" + "\tDateTime: " + str(self.dateTime) + "\n" + "\tSource Code: " + str(self.sourceCode) + "\n" + "\tLatitude: " + str(self.lat) + "\n" + "\tLongitude: " + str(self.long) + "\n" + "\tAltitude: " + str(self.altitude) + "\n" + "\tSpeed: " + str(self.speed) + "\n" + "\tHeading: " + str(self.heading)
 
@@ -80,15 +88,55 @@ def create_data(probe_data_file, link_data_file):
     with open(probe_data_file) as probe_csvfile:
         reader = csv.reader(probe_csvfile)
         for row in reader:
+            #TODO: PROBES WITH SAME ID ARE NOT YET SEPARATED BY TRIP
             if (str(row[0]) not in probe_data):
-                probe_data[str(row[0])] = []
-            probe_data[str(row[0])].append(ProbeDataPoint(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
+                probe_data[str(row[0])] = [[]]
+            batch_size = 10
+            if (len(probe_data[str(row[0])][-1]) < batch_size):
+                probe_data[str(row[0])][-1].append(ProbeDataPoint(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
+            else:
+                probe_data[str(row[0])].append([ProbeDataPoint(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7])])
     with open(link_data_file) as link_csvfile:
         reader = csv.reader(link_csvfile)
         for row in reader:
             link_data.append(LinkData(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14], row[15], row[16]))
     link_data.sort(key=lambda x: x.shapeInfo[0].lat, reverse=True)
     return probe_data, link_data
+
+def map_match(probe_data, link_data):
+    probe_index = 0
+    total_probe_ids = len(probe_data)
+    for probe_id in probe_data:
+        batches = probe_data[probe_id]
+        for batch in batches:
+            link_counts = {}
+            for probe in batch:
+                closestLink = None
+                closestLinkPoint = None
+                closestLinkPointDistance = math.inf
+                for link in link_data:
+                    for linkPoint in link.shapeInfo:
+                        distance = math.sqrt((float(linkPoint.long) - float(probe.long))**2 + (float(linkPoint.lat) - float(probe.lat))**2)
+                        if (distance < closestLinkPointDistance):
+                            closestLinkPointDistance = distance
+                            closestLinkPoint = linkPoint
+                            closestLink = link
+                if (closestLink.linkPVID not in link_counts):
+                    link_counts[closestLink.linkPVID] = 0
+                link_counts[closestLink.linkPVID] += 1
+
+            best_link = ""
+            best_count = 0
+            for linkPVID in link_counts:
+                if (link_counts[linkPVID] > best_count):
+                    best_count = link_counts[linkPVID]
+                    best_link = linkPVID
+            for p in batch:
+                p.linkPVID = best_link
+
+        probe_index+=1
+        sys.stdout.write('\r')
+        sys.stdout.write(str(probe_index) + "/" + str(total_probe_ids))
 
 ### SAVING AND LOADING PROBE AND LINK DATA (NOTE: NOT THAT MUCH FASTER THAN JUST CREATING THE DATA SETS AGAIN)###
 def save_data(probe_data, link_data):
@@ -117,6 +165,7 @@ if __name__ == '__main__':
 
     ### FIRST TIME RUNNING ###
     (probe_data, link_data) = create_data("./probe_data_map_matching/Partition6467ProbePoints.csv", "./probe_data_map_matching/Partition6467LinkData.csv")
+    map_match(probe_data, link_data)
     #save_data(probe_data, link_data)
 
     ### LOADING SAVED PROBE AND LINK DATA ###
