@@ -67,6 +67,49 @@ for t in range(len(probedata)):
 
 #---------------------- really doesn't fit in this code but here u guys go. it's super slow rn because of line 61
 
+#------------------------- the first way I wrote the code, it does like 100 loops per 5 seconds 
+linkdata=pd.read_csv(dirin+f1,header=None)
+startpoint=[linkdata[14][x].split('|')[0] for x in range(len(linkdata))]
+startpoint_broken=[(startpoint[x].split('/'),startpoint[x].split('/')[1]) for x in range(len(startpoint))]
+
+def matchProbeToLink(dirin,f1):
+   from math import sqrt
+   #from time import time
+   linkdata=pd.read_csv(dirin+f1,header=None)
+   probedata=pd.read_csv(dirin+f2,header=None)
+   a=np.array(linkdata[14])
+   a_spl=[a[i].split('|') for i in range(len(a))]
+   min_idx_tmp.append =[]; min_idx=[]; dist_to_Node=[]
+   # format data
+   a_spl_final=[([(float(a_spl[t][z].split('/')[0]), float(a_spl[t][z].split('/')[1])) for z in range(len(a_spl[t]))]) for t in range(len(a_spl))]
+   #make np array
+   print('Done parsing Linkdata')
+   a_final_np=np.array(a_final)
+   # go through probes
+   for t in range(len(probedata)):
+      dxdy= a_final_np- (probedata[3][t],probedata[4][t])
+      d= ((np.array(pd.DataFrame(dxdy)[0])**2+np.array(pd.DataFrame(dxdy)[1])**2)**(.5)).tolist()
+      d_sorted=d.copy()
+      min_idx_tmp.append(d.index(min(d_sorted))) # taking too long?
+      d_sorted_list.remove(min(d_sorted_list))
+      min_idx_tmp.append(d.index(min(d_sorted)))
+      d_sorted_list.remove(min(d_sorted_list))
+      min_idx_tmp.append(d.index(min(d_sorted)))
+      min_idx.append(min_idx_tmp)
+      #print(str(t))
+      if t == int(len(probedata)/4):
+          print('25% complete getting distances')
+      if t == int(3*len(probedata)/4):
+          print('75% complete getting distances')
+   #final return
+   return min_idx,a_final
+
+min_idx,a_final=matchProbeToLink(dirin,f1)
+min_idx_df=pd.DataFrame(min_idx)
+a_final_df=pd.DataFrame(a_final)
+
+#------------------------- the first way I wrote the code, it does like 100 loops per 5 seconds 
+
 
 class ProbeDataPoint:
     def __init__(self, sampleID, dateTime, sourceCode, lat, long, altitude, speed, heading):
