@@ -30,6 +30,44 @@ import sys
 #    probedataSorted= probedata.sort_values('latitude').reset_index()
 #    return linkdataSorted, probedataSorted
 
+
+#------- this search function is driving me crazy i think im looping too much
+
+import time; import pandas as pd; import numpy as np
+from math import sqrt
+
+dir='/Users/anastasiamontgomery/Documents/EECS395/probe_data_map_matching/'
+f1='Partition6467LinkData.csv'
+f2='Partition6467ProbePoints.csv'
+
+linkdata=pd.read_csv(dir+f1,header=None)
+probedata=pd.read_csv(dir+f2, header=None)
+
+a=np.array(linkdata[14])
+a_spl=[a[i].split('|') for i in range(len(a))]
+
+# format data
+a_spl_final=[[(float(a_spl[t][z].split('/')[0]), float(a_spl[t][z].split('/')[1])) for z in range(len(a_spl[t]))] for t in range(len(a_spl))]
+
+nodelinks_xy=[[(float(a_spl[t][z].split('/')[0]),float(a_spl[t][z].split('/')[1])) for z in range(len(a_spl[t]))] for t in range(len(a_spl))]
+#a_spl_final_x=[[float(a_spl[t][z].split('/')[0]) for z in range(len(a_spl[t]))] for t in range(len(a_spl))]
+#a_spl_final_y=[[float(a_spl[t][z].split('/')[1]) for z in range(len(a_spl[t]))] for t in range(len(a_spl))]
+
+start=time.time()
+linkmatch=[];linkdistance=[]
+for t in range(len(probedata)):
+    start=time.time()
+    #get min distance of point to any node on link
+    d=[min((np.subtract((probedata[3][t],probedata[4][t]),nodelinks_xy[l]).ravel()[::2]**2+np.subtract((probedata[3][t],probedata[4][t]),nodelinks_xy[l]).ravel()[1::2]**2)**.5) for l in range(len(nodelinks_xy))]
+    #take min distance
+    linkmatch.append(linkdata[0][d.index(min(d))])
+    linkdistance.append(min(d))
+    print(t)
+    print(str(start-time.time()))
+
+#---------------------- really doesn't fit in this code but here u guys go. it's super slow rn because of line 61
+
+
 class ProbeDataPoint:
     def __init__(self, sampleID, dateTime, sourceCode, lat, long, altitude, speed, heading):
         self.sampleID = sampleID
