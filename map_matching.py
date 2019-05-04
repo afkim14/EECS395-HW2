@@ -22,7 +22,7 @@ def latlon_toMeters(lat1,lon1,lat2,lon2):
   c = 2 * atan2(sqrt(a), sqrt(1 - a))
   distance = R * c
   distance_meters= distance/1000
-  return distance
+  return distance_meters
 
 class ProbeDataPoint:
     def __init__(self, sampleID, dateTime, sourceCode, lat, long, altitude, speed, heading):
