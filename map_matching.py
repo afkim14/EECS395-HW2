@@ -115,7 +115,7 @@ def map_match(probe_data, link_data):
 
     with open('Partition6467MatchedPoints.csv', 'a') as f:
         writer = csv.writer(f)
-        writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "direction", "distFromRefLat", "distFromRefLong", "distFromLinkLat", "distFromLinkLong"])
+        writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "direction", "distFromNode", "distFromLinkLine"])
         for probe_id in probe_data:
             batches = probe_data[probe_id]
             for batch in batches:
@@ -161,9 +161,10 @@ def map_match(probe_data, link_data):
                         nonRefNode = links[best_link].shapeInfo[-1]
                     p.distFromRef = -1
                     if (refNode != None):
-                        p.distFromRefLat = abs(refNode.lat - p.lat)
-                        p.distFromRefLong = abs(refNode.long - p.long)
+                        #p.distFromRefLat = abs(refNode.lat - p.lat)
+                        #p.distFromRefLong = abs(refNode.long - p.long)
                         #p.distFromRef = math.sqrt((refNode.long - p.long)**2 + (refNode.lat - p.lat)**2)
+                        distFromNode=latlon_toMeters(refNode.lat,refNode.long,p.lat,p.long)
                     p.distFromLink = -1
                     if (refNode != None and nonRefNode != None):
                         perp_point = []
@@ -179,11 +180,10 @@ def map_match(probe_data, link_data):
                             a = np.array([[lineSlope, -1],[perpLineSlope,-1]])
                             b = np.array([constant, perpConstant])
                             perp_point = np.linalg.solve(a,b)
-                        p.distFromLinkLat = abs(perp_point[0] - p.lat)
-                        p.distFromLinkLong = abs(perp_point[1] - p.long)
-
+                            
+                        distFromLinkLine=latlon_toMeters(perp_point[0],perp_point[1],p.lat,p.long)
                         #p.distFromLink = abs((lineSlope * p.lat + 1 * p.long + constant)) / (math.sqrt(lineSlope * lineSlope + 1 * 1))
-                    writer.writerow([p.sampleID, p.dateTime, p.sourceCode, str(p.lat), str(p.long), p.altitude, p.speed, p.heading, p.linkPVID, p.direction, str(p.distFromRefLat), str(p.distFromRefLong), str(p.distFromLinkLat), str(p.distFromLinkLong)])
+                    writer.writerow([p.sampleID, p.dateTime, p.sourceCode, str(p.lat), str(p.long), p.altitude, p.speed, p.heading, p.linkPVID, p.direction, str(p.distFromNode), str(p.distFromLinkLine)])
 
     print("MAP MATCHING FINISHED")
 
