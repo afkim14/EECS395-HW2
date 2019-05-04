@@ -1,5 +1,4 @@
 import csv
-import pickle
 import pandas as pd
 #import matplotlib.pyplot as plt
 import math
@@ -110,7 +109,7 @@ def create_data(probe_data_file, link_data_file):
     return probe_data, link_data
 
 def map_match(probe_data, link_data):
-    print("START MAP MATCHING\n")
+    print("START MAP MATCHING")
     matched_probes = []
     probe_index = 0
     total_probe_ids = len(probe_data)
@@ -119,6 +118,9 @@ def map_match(probe_data, link_data):
         writer = csv.writer(f)
         writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "linkRefNode", "direction", "distFromNode", "distFromLinkLine"])
         for probe_id in probe_data:
+            probe_index+=1
+            sys.stdout.write('\r')
+            sys.stdout.write('[ ' + str(probe_index) + "/" + str(total_probe_ids) + ' ]')
             batches = probe_data[probe_id]
             for batch in batches:
                 links = {}
@@ -142,10 +144,6 @@ def map_match(probe_data, link_data):
                     link_counts[closestLink.linkPVID] += 1
                     if (closestLink.linkPVID not in links):
                         links[closestLink.linkPVID] = closestLink
-                    probe_index+=1
-
-                    sys.stdout.write('\r')
-                    sys.stdout.write('[ ' + str(probe_index) + "/" + str(total_probe_ids) + ' ]')
 
                 best_link = ""
                 best_count = 0
@@ -215,16 +213,16 @@ def calculate_slope(file):
 
 
 ### SAVING AND LOADING PROBE AND LINK DATA (NOTE: NOT THAT MUCH FASTER THAN JUST CREATING THE DATA SETS AGAIN)###
-def save_data(probe_data, link_data):
-    probe_filehandler = open('./saved_probe_data.txt', 'wb')
-    link_filehandler = open('./saved_link_data.txt', 'wb')
-    pickle.dump(probe_data, probe_filehandler)
-    pickle.dump(link_data, link_filehandler)
-
-def load_data():
-    probe_filehandler = open('./saved_probe_data.txt', 'rb')
-    link_filehandler = open('./saved_link_data.txt', 'rb')
-    return pickle.load(probe_filehandler), pickle.load(link_filehandler)
+# def save_data(probe_data, link_data):
+#     probe_filehandler = open('./saved_probe_data.txt', 'wb')
+#     link_filehandler = open('./saved_link_data.txt', 'wb')
+#     pickle.dump(probe_data, probe_filehandler)
+#     pickle.dump(link_data, link_filehandler)
+#
+# def load_data():
+#     probe_filehandler = open('./saved_probe_data.txt', 'rb')
+#     link_filehandler = open('./saved_link_data.txt', 'rb')
+#     return pickle.load(probe_filehandler), pickle.load(link_filehandler)
 
 def create_link_data_points(shapeInfo):
     parsedPoints = []
@@ -235,12 +233,12 @@ def create_link_data_points(shapeInfo):
     return parsedPoints
 
 if __name__ == '__main__':
-    # if (len(sys.argv) < 3):
-    #     print("Please supply the probe points data and the link data. Usage: python3 map_matching.py [probe_data.csv] [link_data.csv]")
-    #     exit(0)
+    if (len(sys.argv) < 3):
+        print("Please supply the probe points data and the link data. Usage: python3 map_matching.py [probe_data.csv] [link_data.csv]")
+        exit(0)
 
     ### FIRST TIME RUNNING ###
-    (probe_data, link_data) = create_data("./probe_data_map_matching/Partition6467ProbePoints.csv", "./probe_data_map_matching/Partition6467LinkData.csv")
+    (probe_data, link_data) = create_data(sys.argv[1], sys.argv[2])
     output_file = map_match(probe_data, link_data)
     calculate_slope(output_file)
     #save_data(probe_data, link_data)
