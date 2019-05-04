@@ -1,7 +1,7 @@
 import csv
 import pickle
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import math
 import sys
 import random
@@ -21,7 +21,7 @@ def latlon_toMeters(lat1,lon1,lat2,lon2):
   a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
   c = 2 * atan2(sqrt(a), sqrt(1 - a))
   distance = R * c
-  distance_meters= distance/1000
+  distance_meters= distance*1000
   return distance_meters
 
 class ProbeDataPoint:
@@ -41,6 +41,8 @@ class ProbeDataPoint:
         self.distFromRef = ""
         self.distFromLink = ""
 
+        ###
+        self.linkNode = ""
         ### TEMPORARY
         self.distFromRefLat = ""
         self.distFromRefLong = ""
@@ -115,7 +117,7 @@ def map_match(probe_data, link_data):
 
     with open('Partition6467MatchedPoints.csv', 'a') as f:
         writer = csv.writer(f)
-        writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "direction", "distFromNode", "distFromLinkLine"])
+        writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "linkNode", "direction", "distFromNode", "distFromLinkLine"])
         for probe_id in probe_data:
             batches = probe_data[probe_id]
             for batch in batches:
@@ -158,13 +160,14 @@ def map_match(probe_data, link_data):
                     nonRefNode = None
                     if (len(links[best_link].shapeInfo) > 0):
                         refNode = links[best_link].shapeInfo[0]
+                        p.linkNode = str(refNode.lat) + ", " + str(refNode.long)
                         nonRefNode = links[best_link].shapeInfo[-1]
                     p.distFromRef = -1
                     if (refNode != None):
                         #p.distFromRefLat = abs(refNode.lat - p.lat)
                         #p.distFromRefLong = abs(refNode.long - p.long)
                         #p.distFromRef = math.sqrt((refNode.long - p.long)**2 + (refNode.lat - p.lat)**2)
-                        distFromNode=latlon_toMeters(refNode.lat,refNode.long,p.lat,p.long)
+                        p.distFromRef=latlon_toMeters(refNode.lat,refNode.long,p.lat,p.long)
                     p.distFromLink = -1
                     if (refNode != None and nonRefNode != None):
                         perp_point = []
@@ -181,9 +184,9 @@ def map_match(probe_data, link_data):
                             b = np.array([constant, perpConstant])
                             perp_point = np.linalg.solve(a,b)
                             
-                        distFromLinkLine=latlon_toMeters(perp_point[0],perp_point[1],p.lat,p.long)
+                        p.distFromLink=latlon_toMeters(perp_point[0],perp_point[1],p.lat,p.long)
                         #p.distFromLink = abs((lineSlope * p.lat + 1 * p.long + constant)) / (math.sqrt(lineSlope * lineSlope + 1 * 1))
-                    writer.writerow([p.sampleID, p.dateTime, p.sourceCode, str(p.lat), str(p.long), p.altitude, p.speed, p.heading, p.linkPVID, p.direction, str(p.distFromNode), str(p.distFromLinkLine)])
+                    writer.writerow([p.sampleID, p.dateTime, p.sourceCode, str(p.lat), str(p.long), p.altitude, p.speed, p.heading, p.linkPVID, p.linkNode, p.direction, str(p.distFromRef), str(p.distFromLink)])
 
     print("MAP MATCHING FINISHED")
 
