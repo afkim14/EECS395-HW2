@@ -114,7 +114,7 @@ def map_match(probe_data, link_data):
     probe_index = 0
     total_probe_ids = len(probe_data)
 
-    with open('Partition6467MatchedPoints.csv', 'a') as f:
+    with open('Partition6467MatchedPoints.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "linkRefNode", "direction", "distFromNode", "distFromLinkLine"])
         for probe_id in probe_data:
@@ -191,7 +191,7 @@ def map_match(probe_data, link_data):
 
 def calculate_slope(file):
     data = []
-    with open('Partition6467MatchedPoints_Slopes.csv', 'a') as f:
+    with open('Partition6467MatchedPoints_Slopes.csv', 'a', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "linkRefNode", "direction", "distFromNode", "distFromLinkLine", "slope"])
         with open(file) as probe_csvfile:
