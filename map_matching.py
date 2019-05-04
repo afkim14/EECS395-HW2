@@ -129,7 +129,7 @@ def map_match(probe_data, link_data):
                         if (probe.lat < link.minLat or probe.lat > link.maxLat or probe.long < link.minLong or probe.long > link.maxLong):
                             continue
                         for linkPoint in link.shapeInfo:
-                            distance = math.sqrt((linkPoint.long - probe.long)**2 + (linkPoint.lat - probe.lat)**2)
+                            distance = latlon_toMeters(linkPoint.long,linkPoint.lat,probe.long,probe.lat)
                             if (distance < closestLinkPointDistance):
                                 closestLinkPointDistance = distance
                                 closestLinkPoint = linkPoint
