@@ -4,6 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import math
 import sys
+import random
+import numpy as np
 
 # dir='/Users/anastasiamontgomery/Documents/EECS395/probe_data_map_matching/'
 # f1='Partition6467LinkData.csv'
@@ -35,8 +37,8 @@ class ProbeDataPoint:
         self.sampleID = sampleID
         self.dateTime = dateTime
         self.sourceCode = sourceCode
-        self.lat = lat
-        self.long = long
+        self.lat = float(lat)
+        self.long = float(long)
         self.altitude = altitude
         self.speed = speed
         self.heading = heading
@@ -46,6 +48,12 @@ class ProbeDataPoint:
         self.direction = ""
         self.distFromRef = ""
         self.distFromLink = ""
+
+        ### TEMPORARY
+        self.distFromRefLat = ""
+        self.distFromRefLong = ""
+        self.distFromLinkLat = ""
+        self.distFromLinkLong = ""
     def __str__(self):
         return "Probe ID: " + str(self.sampleID) + "\n" + "\tDateTime: " + str(self.dateTime) + "\n" + "\tSource Code: " + str(self.sourceCode) + "\n" + "\tLatitude: " + str(self.lat) + "\n" + "\tLongitude: " + str(self.long) + "\n" + "\tAltitude: " + str(self.altitude) + "\n" + "\tSpeed: " + str(self.speed) + "\n" + "\tHeading: " + str(self.heading)
 
@@ -68,6 +76,10 @@ class LinkData:
         self.shapeInfo = create_link_data_points(shapeInfo)
         self.curvatureInfo = curvatureInfo
         self.slopeInfo = slopeInfo
+        self.minLat = min(self.shapeInfo, key=lambda l: l.lat).lat
+        self.maxLat = max(self.shapeInfo, key=lambda l: l.lat).lat
+        self.minLong = min(self.shapeInfo, key=lambda l: l.long).long
+        self.maxLong = max(self.shapeInfo, key=lambda l: l.long).long
     def __str__(self):
         shapeInfo = "["
         for point in self.shapeInfo[:-1]:
@@ -77,8 +89,8 @@ class LinkData:
 
 class LinkDataPoint:
     def __init__(self, lat, long):
-        self.lat = lat
-        self.long = long
+        self.lat = float(lat)
+        self.long = float(long)
     def __str__(self):
         return "Latitude: " + str(self.lat) + ", Longitude: " + str(self.long)
 
@@ -104,39 +116,85 @@ def create_data(probe_data_file, link_data_file):
     return probe_data, link_data
 
 def map_match(probe_data, link_data):
+    print("START MAP MATCHING\n")
+    matched_probes = []
     probe_index = 0
     total_probe_ids = len(probe_data)
-    for probe_id in probe_data:
-        batches = probe_data[probe_id]
-        for batch in batches:
-            link_counts = {}
-            for probe in batch:
-                closestLink = None
-                closestLinkPoint = None
-                closestLinkPointDistance = math.inf
-                for link in link_data:
-                    for linkPoint in link.shapeInfo:
-                        distance = math.sqrt((float(linkPoint.long) - float(probe.long))**2 + (float(linkPoint.lat) - float(probe.lat))**2)
-                        if (distance < closestLinkPointDistance):
-                            closestLinkPointDistance = distance
-                            closestLinkPoint = linkPoint
-                            closestLink = link
-                if (closestLink.linkPVID not in link_counts):
-                    link_counts[closestLink.linkPVID] = 0
-                link_counts[closestLink.linkPVID] += 1
 
-            best_link = ""
-            best_count = 0
-            for linkPVID in link_counts:
-                if (link_counts[linkPVID] > best_count):
-                    best_count = link_counts[linkPVID]
-                    best_link = linkPVID
-            for p in batch:
-                p.linkPVID = best_link
+    with open('Partition6467MatchedPoints.csv', 'a') as f:
+        writer = csv.writer(f)
+        writer.writerow(["sampleID", "dateTime", "sourceCode", "Latitude", "Longitude", "Altitude", "Speed", "Heading", "linkPVID", "direction", "distFromRefLat", "distFromRefLong", "distFromLinkLat", "distFromLinkLong"])
+        for probe_id in probe_data:
+            batches = probe_data[probe_id]
+            for batch in batches:
+                links = {}
+                link_counts = {}
+                for probe in batch:
+                    closestLink = None
+                    closestLinkPoint = None
+                    closestLinkPointDistance = math.inf
+                    for link in link_data:
+                        if (probe.lat < link.minLat or probe.lat > link.maxLat or probe.long < link.minLong or probe.long > link.maxLong):
+                            continue
+                        for linkPoint in link.shapeInfo:
+                            distance = math.sqrt((linkPoint.long - probe.long)**2 + (linkPoint.lat - probe.lat)**2)
+                            if (distance < closestLinkPointDistance):
+                                closestLinkPointDistance = distance
+                                closestLinkPoint = linkPoint
+                                closestLink = link
+                    if (closestLink == None): closestLink = link_data[random.randint(0, len(link_data)-1)]
+                    if (closestLink.linkPVID not in link_counts):
+                        link_counts[closestLink.linkPVID] = 0
+                    link_counts[closestLink.linkPVID] += 1
+                    if (closestLink.linkPVID not in links):
+                        links[closestLink.linkPVID] = closestLink
+                    probe_index+=1
 
-        probe_index+=1
-        sys.stdout.write('\r')
-        sys.stdout.write(str(probe_index) + "/" + str(total_probe_ids))
+                    sys.stdout.write('\r')
+                    sys.stdout.write('[ ' + str(probe_index) + "/" + str(total_probe_ids) + ' ]')
+
+                best_link = ""
+                best_count = 0
+                for linkPVID in link_counts:
+                    if (link_counts[linkPVID] > best_count):
+                        best_count = link_counts[linkPVID]
+                        best_link = linkPVID
+                for p in batch:
+                    p.linkPVID = best_link
+                    p.direction = links[best_link].directionOfTravel
+                    refNode = None
+                    nonRefNode = None
+                    if (len(links[best_link].shapeInfo) > 0):
+                        refNode = links[best_link].shapeInfo[0]
+                        nonRefNode = links[best_link].shapeInfo[-1]
+                    p.distFromRef = -1
+                    if (refNode != None):
+                        p.distFromRefLat = abs(refNode.lat - p.lat)
+                        p.distFromRefLong = abs(refNode.long - p.long)
+                        #p.distFromRef = math.sqrt((refNode.long - p.long)**2 + (refNode.lat - p.lat)**2)
+                    p.distFromLink = -1
+                    if (refNode != None and nonRefNode != None):
+                        perp_point = []
+                        if (nonRefNode.lat - refNode.lat == 0):
+                            perp_point = [nonRefNode.lat, p.long]
+                        elif (nonRefNode.long - refNode.long == 0):
+                            perp_point = [p.lat, nonRefNode.long]
+                        else:
+                            lineSlope = (nonRefNode.long - refNode.long) / (nonRefNode.lat - refNode.lat)
+                            constant = (lineSlope * nonRefNode.lat) - nonRefNode.long
+                            perpLineSlope = float(1.0/lineSlope) * -1.0
+                            perpConstant = (perpLineSlope * p.lat) - p.long
+                            a = np.array([[lineSlope, -1],[perpLineSlope,-1]])
+                            b = np.array([constant, perpConstant])
+                            perp_point = np.linalg.solve(a,b)
+                        p.distFromLinkLat = abs(perp_point[0] - p.lat)
+                        p.distFromLinkLong = abs(perp_point[1] - p.long)
+
+                        #p.distFromLink = abs((lineSlope * p.lat + 1 * p.long + constant)) / (math.sqrt(lineSlope * lineSlope + 1 * 1))
+                    writer.writerow([p.sampleID, p.dateTime, p.sourceCode, str(p.lat), str(p.long), p.altitude, p.speed, p.heading, p.linkPVID, p.direction, str(p.distFromRefLat), str(p.distFromRefLong), str(p.distFromLinkLat), str(p.distFromLinkLong)])
+
+    print("MAP MATCHING FINISHED")
+
 
 ### SAVING AND LOADING PROBE AND LINK DATA (NOTE: NOT THAT MUCH FASTER THAN JUST CREATING THE DATA SETS AGAIN)###
 def save_data(probe_data, link_data):
